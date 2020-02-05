@@ -5,6 +5,13 @@ const db = require('../data/db-config.js');
 
 const router = express.Router();
 
+const {
+  validateCarId,
+  validateCar,
+  validateUniqueVin,
+  validateUniqueVinUpdate
+} = require('../middlewares/cars-middlewares.js');
+
 // GET cars
 router.get('/', (req, res) => {
   db('cars')
@@ -17,25 +24,12 @@ router.get('/', (req, res) => {
 });
 
 // GET cars by id
-router.get('/:id', (req, res) => {
-  const { id } = req.params;
-
-  db('cars')
-    .where('id', id)
-    .then(account => {
-      if (account.length > 0) {
-        res.status(200).json(account);
-      } else {
-        res.status(400).json({ message: 'Invalid ID' });
-      }
-    })
-    .catch(err => {
-      res.status(500).json({ error: 'Failed to get ID', err });
-    });
+router.get('/:id', validateCarId, (req, res) => {
+  res.status(200).json(req.car);
 });
 
 // POST new car {vin, make, model, mileage, transmission, title_status}
-router.post('/', (req, res) => {
+router.post('/', validateCar, validateUniqueVin, (req, res) => {
   const accountData = req.body;
 
   db('cars')
@@ -49,21 +43,28 @@ router.post('/', (req, res) => {
 });
 
 // PUT updating a car {vin, make, model, mileage, transmission, title_status}
-router.put('/:id', (req, res) => {
-  const { id } = req.params;
+router.put(
+  '/:id',
+  validateCarId,
+  validateCar,
+  validateUniqueVinUpdate,
+  (req, res) => {
+    const { id } = req.params;
 
-  db('cars')
-    .where('id', id)
-    .update(req.body)
-    .then(updated => {
-      res.status(200).json({ updated: updated });
-    })
-    .catch(err => {
-      res.status(500).json({ error: 'Failed to update car', err });
-    });
-});
+    db('cars')
+      .where('id', id)
+      .update(req.body)
+      .then(updated => {
+        res.status(200).json({ updated: updated });
+      })
+      .catch(err => {
+        res.status(500).json({ error: 'Failed to update car', err });
+      });
+  }
+);
 
-router.delete('/:id', (req, res) => {
+// DELETE car by id
+router.delete('/:id', validateCarId, (req, res) => {
   const { id } = req.params;
 
   db('cars')
